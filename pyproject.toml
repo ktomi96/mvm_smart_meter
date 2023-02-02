@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "mvm-smart-meter"
+version = "0.0.1"
+description = "Script for scraping mvm smart meter data"
+authors = ["ktomi96 <kokai.tamas.96@gmail.com>"]
+readme = "README.md"
+packages = [{include = "mvm_smart_meter"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+beautifulsoup4 = "^4.11.1"
+requests = "^2.28.2"
+python-dotenv = "^0.21.1"
+selenium = "^4.8.0"
+webdriver-manager = "^3.8.5"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
