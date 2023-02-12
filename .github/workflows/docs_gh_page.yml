@@ -40,13 +40,17 @@ jobs:
           poetry add sphinx
           poetry add sphinx-rtd-theme
 
-      - name: Make the sphinx docs_gh_page
+      - name: Sphinx build
         run: |
-          cd docs
-          make clean
-          make clean html
-          cd ..
-
+          sphinx-build doc _build
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        with:
+          publish_branch: gh-pages
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: _build/
+          force_orphan: true
       - name: Init new repo in dist folder and commit generated files
         run: |
           cd docs/_build/html/
