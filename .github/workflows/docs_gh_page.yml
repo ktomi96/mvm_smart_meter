@@ -7,67 +7,21 @@ on:
 jobs:
   docs_gh_page:
     runs-on: ubuntu-latest
-    env:
-      GITHUB_PAT: ${{  secrets.GITHUB_TOKEN }}
 
     steps:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      
-      - name: Install Poetry
-        uses: snok/install-poetry@v1
-        with:
-          virtualenvs-create: true
-          virtualenvs-in-project: true
-          installer-parallel: true
-          
-
-      - name: Install dependencies
-        if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root
-      #----------------------------------------------
-      # install your root project, if required
-      #----------------------------------------------
-
-      - name: Install dependencies
-        run: |
-          source .venv/bin/activate
-          poetry add sphinx
-          poetry add sphinx-rtd-theme
-
-      - name: Sphinx build
-        run: |
-          sphinx-build doc _build
       - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        if: ${{ github.event_name == 'push' && github.ref == 'refs/heads/master' }}
+        uses: peterhs73/sphinx-docs-action@v0.0.1
         with:
-          publish_branch: gh-pages
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: _build/
-          force_orphan: true
-      - name: Init new repo in dist folder and commit generated files
-        run: |
-          cd docs/_build/html/
-          git init
-          touch .nojekyll
-          git add -A
-          git config --local user.email "action@github.com"
-          git config --local user.name "Github Action"
-          git commit -m 'deploy'
-
-      - name: Push changes
-        uses: ad-m/github-push-action@master
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: gh-pages
-          force: true
-          directory: .docs/_build/html
+          python-version: 3.10 
+          pyproject-path: pyproject.toml # defaults to pyproject.toml
+          docs-source: docs/ # defaults to docs/
+          docs-build: docs_build/ # defaults to docs_build/
+          external-repo: <username>/<repo-name>
+          external-repo-branch: gh-pages # defaults to master
+          deploy-token: ${{ secrets.PRIVATE_TOKEN}}
 
       - name: Publish PyPi package
         uses: code-specialist/pypi-poetry-publish@v1
