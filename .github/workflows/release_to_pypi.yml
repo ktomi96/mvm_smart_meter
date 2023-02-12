@@ -5,12 +5,13 @@ on:
     branches: [ master ]
 
 jobs:
-  build-n-publish:
-    name: Build and publish to PyPI
+  publish-service-client-package:
     runs-on: ubuntu-latest
-  
+    permissions:
+      contents: write
     steps:
-    - name: Build and publish to pypi
-      uses: JRubics/poetry-publish@v1.16
-      with:
-        pypi_token: ${{ secrets.PYPI_TOKEN }}
+      - name: Publish PyPi package
+        uses: code-specialist/pypi-poetry-publish@v1
+        with:
+          ACCESS_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PUBLISH_REGISTRY_PASSWORD: ${{ secrets.PYPI_TOKEN }}
