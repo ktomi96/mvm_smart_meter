@@ -42,8 +42,10 @@ jobs:
 
       - name: Make the sphinx docs_gh_page
         run: |
-          make -C docs clean
-          make -C docs html
+          cd docs
+          make clean
+          make clean html
+          cd ..
 
       - name: Init new repo in dist folder and commit generated files
         run: |
