@@ -58,7 +58,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
           force: true
-          directory: .docs/_build/html
+          directory: docs/_build/html
   
   publish-service-client-package:
     needs: [docs_gh_page]
