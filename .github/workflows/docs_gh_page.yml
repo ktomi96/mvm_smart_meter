@@ -44,18 +44,29 @@ jobs:
 
 
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v3
-        with:
-          name: html-docs
-          path: docs/_build/html/
-      - name: Deploy
-        uses: peaceiris/actions-gh-pages@v3
-        if: github.ref == 'refs/heads/main'
+      - name: Init new repo in dist folder and commit generated files
+        run: |
+          cd docs/_build/html/
+          git init
+          touch .nojekyll
+          git add -A
+          git config --local user.email "action@github.com"
+          git config --local user.name "Github Action"
+          git commit -m 'deploy'
+      - name: Push changes
+        uses: ad-m/github-push-action@master
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: docs/_build/html
-
+          branch: gh-pages
+          force: true
+          directory: .docs/_build/html
+  
+  publish-service-client-package:
+    needs: [docs_gh_page]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
       - name: Publish PyPi package
         uses: code-specialist/pypi-poetry-publish@v1
         with:
