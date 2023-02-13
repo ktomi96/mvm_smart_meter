@@ -10,6 +10,7 @@ jobs:
     permissions:
       contents: write
     steps:
+
       - name: Publish PyPi package
         uses: code-specialist/pypi-poetry-publish@v1
         with:
