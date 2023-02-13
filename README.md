@@ -6,13 +6,13 @@ This is a automation tool for collecting load curve from mvm smart metering site
 Installation:
 
 ```bash
-pip install mvm_smart_metering
+pip install mvm-smart-metering
 ```
 
 or
 
 ```bash
-poetry add mvm_smart_metering
+poetry add mvm-smart-metering
 ```
 
 
