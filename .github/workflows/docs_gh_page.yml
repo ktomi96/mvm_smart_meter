@@ -37,16 +37,13 @@ jobs:
       - name: Install dependencies
         run: |
           source .venv/bin/activate
+          poetry install --no-interaction
           poetry add sphinx
           poetry add sphinx-rtd-theme
+          sphinx-build -b html docs docs/_build
 
- 
-    
-      - uses: ammaraskar/sphinx-action@master
-        with:
-          docs-folder: "docs/"
-          build-command: "sphinx-build -b html . _build"
-          
+
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v3
         with:
