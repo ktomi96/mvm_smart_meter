@@ -34,19 +34,19 @@ jobs:
       # install your root project, if required
       #----------------------------------------------
 
-      - name: Install dependencies
+      - name: Build sphinx documantion
         run: |
           source .venv/bin/activate
           poetry install --no-interaction
           poetry add sphinx
           poetry add sphinx-rtd-theme
-          sphinx-build -b html docs docs/build
+          make -C docs html
 
 
 
       - name: Init new repo in dist folder and commit generated files
         run: |
-          cd docs/build/html/
+          cd docs/_build/html/
           git init
           touch .nojekyll
           git add -A
@@ -59,7 +59,7 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           branch: gh-pages
           force: true
-          directory: .docs/build/html
+          directory: .docs/_build/html
   
   publish-service-client-package:
     needs: [docs_gh_page]
