@@ -39,6 +39,7 @@ class Smart_meter:
         split_url = response_url.split("(")[1]
         self.sap_id = split_url.split(")")[0]
         # print(r.url)
+        
 
     def get_login_cookies(self):
         """Log's into the main site, gets the cookies and the AuthCode for grabbing the token later on."""
