@@ -1,8 +1,8 @@
 name: docs_gh_pages
 
 on:
-  push:
-    branches: [master]
+  release:
+    types: [published]
 
 jobs:
   docs_gh_page:
@@ -29,9 +29,6 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root
-      #----------------------------------------------
-      # install your root project, if required
-      #----------------------------------------------
 
       - name: Build sphinx documantion
         run: |
