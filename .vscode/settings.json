@@ -1,5 +1,0 @@
-{
-    "yaml.schemas": {
-        "https://json.schemastore.org/github-workflow.json": "file:///home/tomi/Pictures/Project/mvm_smart_metering/.github/workflows/docs_gh_page.yml"
-    }
-}
