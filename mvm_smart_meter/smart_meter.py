@@ -367,9 +367,11 @@ def validate_df(df_to_validate: pandas.DataFrame) -> bool:
     """
     return (
         sum(
-            df_to_validate.iloc[[48]].imported.item()
-            + df_to_validate.iloc[[48]].exported.item()
-            + df_to_validate.iloc[[48]].saldo.item()
+            [
+                df_to_validate.iloc[[48]].imported.item()
+                + df_to_validate.iloc[[48]].exported.item()
+                + df_to_validate.iloc[[48]].saldo.item()
+            ]
         )
         > 0.0
     )
