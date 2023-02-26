@@ -39,7 +39,6 @@ class Smart_meter:
         split_url = response_url.split("(")[1]
         self.sap_id = split_url.split(")")[0]
         # print(r.url)
-        
 
     def get_login_cookies(self):
         """Log's into the main site, gets the cookies and the AuthCode for grabbing the token later on."""
@@ -367,9 +366,12 @@ def validate_df(df_to_validate: pandas.DataFrame) -> bool:
     :rtype: bool
     """
     return (
-        df_to_validate.iloc[[48]].imported.item() != 0.0
-        and df_to_validate.iloc[[48]].exported.item() != 0.0
-        and df_to_validate.iloc[[48]].saldo.item() != 0.0
+        sum(
+            df_to_validate.iloc[[48]].imported.item()
+            + df_to_validate.iloc[[48]].exported.item()
+            + df_to_validate.iloc[[48]].saldo.item()
+        )
+        > 0.0
     )
 
 
