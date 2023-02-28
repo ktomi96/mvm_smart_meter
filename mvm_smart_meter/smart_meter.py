@@ -19,8 +19,16 @@ class Smart_meter:
     def __init__(self, username: str, password: str):
         self.options = Options()
         self.options.add_argument("--headless")
+
+        gecko_driver_path = os.getenv("GECKO_DRIVER_PATH")
+
+        if gecko_driver_path is None:
+            gecko_executable_path = GeckoDriverManager().install()
+        else:
+            gecko_executable_path = gecko_driver_path
+
         self.firefox_driver = webdriver.Firefox(
-            executable_path=GeckoDriverManager().install(), options=self.options
+            executable_path=gecko_executable_path, options=self.options
         )
         self.s = Session(driver=self.firefox_driver)
         self.s.headers.update(

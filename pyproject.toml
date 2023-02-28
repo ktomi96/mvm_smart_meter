@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "mvm_smart_metering"
-version = "0.0.12"
+version = "0.0.13"
 description = "Script for scraping mvm smart meter data"
 authors = ["ktomi96 <kokai.tamas.96@gmail.com>"]
 readme = "README.md"
