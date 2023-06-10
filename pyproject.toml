@@ -1,19 +1,19 @@
 [tool.poetry]
 name = "mvm_smart_metering"
-version = "0.0.13"
+version = "0.0.14"
 description = "Script for scraping mvm smart meter data"
 authors = ["ktomi96 <kokai.tamas.96@gmail.com>"]
 readme = "README.md"
 packages = [{include = "mvm_smart_meter"}]
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "^3.11"
 beautifulsoup4 = "^4.11.1"
 requests = "^2.28.2"
-python-dotenv = "^0.21.1"
+python-dotenv = "1.0.0"
 webdriver-manager = "^3.8.5"
-requestium = "^0.1.15"
-pandas = "^1.5.3"
+requestium = "0.2.1"
+pandas = "2.0.2"
 
 
 [build-system]
