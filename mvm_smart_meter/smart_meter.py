@@ -8,6 +8,7 @@ from datetime import datetime, timedelta
 from requestium import Session, Keys
 from selenium import webdriver
 from webdriver_manager.firefox import GeckoDriverManager
+from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
 import pandas
 import io
@@ -20,22 +21,20 @@ class Smart_meter:
         self.options = Options()
         self.options.add_argument("--headless")
 
-        gecko_driver_path = os.getenv("GECKO_DRIVER_PATH")
+        agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0"
+        self.options.set_preference("general.useragent.override", agent)
 
-        if gecko_driver_path is None:
-            gecko_executable_path = GeckoDriverManager().install()
-        else:
+        if gecko_driver_path := os.getenv("GECKO_DRIVER_PATH"):
             gecko_executable_path = gecko_driver_path
 
+        else:
+            gecko_executable_path = GeckoDriverManager().install()
+        self.service = Service(executable_path=gecko_executable_path)
         self.firefox_driver = webdriver.Firefox(
-            executable_path=gecko_executable_path, options=self.options
+            service=self.service, options=self.options
         )
+
         self.s = Session(driver=self.firefox_driver)
-        self.s.headers.update(
-            {
-                "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/109.0"
-            }
-        )
         self.base_url = "https://eloszto.mvmemaszhalozat.hu"
         self.username = username
         self.password = password
@@ -117,8 +116,9 @@ class Smart_meter:
         r_list = r.json()["d"]["results"]
         self.meter_ids = r.json()["d"]["results"]
         self.smart_meter_links = []
-
+        print(r_list)
         for link in r_list:
+  
             if link["URL"].find("guid=&") == -1:
                 split_url = link["URL"].split("?")
                 query_string = split_url[1]
@@ -126,9 +126,11 @@ class Smart_meter:
                 query_string_list = query_string.split("&")
 
                 query_dict = {"url": split_url[0], "meter_id": link["FogyMeroAzon"]}
+  
                 for item in query_string_list:
                     key, value = item.split("=")
                     query_dict[key] = value
+    
                 self.smart_meter_links.append(query_dict)
 
     def get_cookies_smart_meter_site(self):
