@@ -14,6 +14,33 @@ import pandas
 import io
 
 
+class GuidNotFoundException(Exception):
+    """
+    Exception raised when the GUID is not found in a URL.
+
+    :param message: Custom error message describing the exception. Defaults to "Guid not found in URL".
+    :type message: str
+    :param url: URL where the GUID was not found. Defaults to None.
+    :type url: str
+
+    :ivar message: Custom error message describing the exception.
+    :ivar url: URL where the GUID was not found.
+    """
+
+    def __init__(self, message="Guid not found in URL", url=None):
+        """
+        Initialize a GuidNotFoundException instance.
+
+        :param message: Custom error message. Defaults to "Guid not found in URL".
+        :type message: str
+        :param url: URL where the GUID was not found. Defaults to None.
+        :type url: str
+        """
+        self.message = message
+        self.url = url
+        super().__init__(f"{self.message}: {url}")
+
+
 class Smart_meter:
     """All the main function to gather date from the smart metering site is gathered here"""
 
@@ -116,22 +143,22 @@ class Smart_meter:
         r_list = r.json()["d"]["results"]
         self.meter_ids = r.json()["d"]["results"]
         self.smart_meter_links = []
-        print(r_list)
+
         for link in r_list:
-  
-            if link["URL"].find("guid=&") == -1:
-                split_url = link["URL"].split("?")
-                query_string = split_url[1]
+            if link["URL"].find("guid=&") != -1:
+                raise GuidNotFoundException(url=link)
+            split_url = link["URL"].split("?")
+            query_string = split_url[1]
 
-                query_string_list = query_string.split("&")
+            query_string_list = query_string.split("&")
 
-                query_dict = {"url": split_url[0], "meter_id": link["FogyMeroAzon"]}
-  
-                for item in query_string_list:
-                    key, value = item.split("=")
-                    query_dict[key] = value
-    
-                self.smart_meter_links.append(query_dict)
+            query_dict = {"url": split_url[0], "meter_id": link["FogyMeroAzon"]}
+
+            for item in query_string_list:
+                key, value = item.split("=")
+                query_dict[key] = value
+
+            self.smart_meter_links.append(query_dict)
 
     def get_cookies_smart_meter_site(self):
         """Get cookies from the main site.Need to find a workaround as requestium uses old version of selenium."""
