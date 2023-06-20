@@ -144,21 +144,25 @@ class Smart_meter:
         self.meter_ids = r.json()["d"]["results"]
         self.smart_meter_links = []
 
+        r_list_lenght = len(r_list)
+
         for link in r_list:
-            if link["URL"].find("guid=&") != -1:
-                raise GuidNotFoundException(url=link)
-            split_url = link["URL"].split("?")
-            query_string = split_url[1]
+            if link["URL"].find("guid=&") == -1:
+                split_url = link["URL"].split("?")
 
-            query_string_list = query_string.split("&")
+                query_string = split_url[1]
 
-            query_dict = {"url": split_url[0], "meter_id": link["FogyMeroAzon"]}
+                query_string_list = query_string.split("&")
+                query_dict = {"url": split_url[0], "meter_id": link["FogyMeroAzon"]}
+                for item in query_string_list:
+                    key, value = item.split("=")
+                    query_dict[key] = value
+                self.smart_meter_links.append(query_dict)
+            else:
+                r_list_lenght -= 1
 
-            for item in query_string_list:
-                key, value = item.split("=")
-                query_dict[key] = value
-
-            self.smart_meter_links.append(query_dict)
+        if r_list_lenght == 0:
+            raise GuidNotFoundException(url=link)
 
     def get_cookies_smart_meter_site(self):
         """Get cookies from the main site.Need to find a workaround as requestium uses old version of selenium."""
