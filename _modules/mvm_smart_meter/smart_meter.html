@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mvm_smart_meter.smart_meter &mdash; mvm_smart_meter 0.0.2 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            mvm_smart_meter
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">mvm_smart_meter</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">mvm_smart_meter.smart_meter</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for mvm_smart_meter.smart_meter</h1><div class="highlight"><pre>
+<span></span><span class="c1"># mvm_smart_meter/smart_meter.py</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span><span class="p">,</span> <span class="n">timedelta</span>
+
+
+<span class="kn">from</span> <span class="nn">requestium</span> <span class="kn">import</span> <span class="n">Session</span><span class="p">,</span> <span class="n">Keys</span>
+<span class="kn">from</span> <span class="nn">selenium</span> <span class="kn">import</span> <span class="n">webdriver</span>
+<span class="kn">from</span> <span class="nn">webdriver_manager.firefox</span> <span class="kn">import</span> <span class="n">GeckoDriverManager</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.firefox.service</span> <span class="kn">import</span> <span class="n">Service</span>
+<span class="kn">from</span> <span class="nn">selenium.webdriver.firefox.options</span> <span class="kn">import</span> <span class="n">Options</span>
+<span class="kn">import</span> <span class="nn">pandas</span>
+<span class="kn">import</span> <span class="nn">io</span>
+
+
+<div class="viewcode-block" id="GuidNotFoundException"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.GuidNotFoundException">[docs]</a><span class="k">class</span> <span class="nc">GuidNotFoundException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Exception raised when the GUID is not found in a URL.</span>
+
+<span class="sd">    :param message: Custom error message describing the exception. Defaults to &quot;Guid not found in URL&quot;.</span>
+<span class="sd">    :type message: str</span>
+<span class="sd">    :param url: URL where the GUID was not found. Defaults to None.</span>
+<span class="sd">    :type url: str</span>
+
+<span class="sd">    :ivar message: Custom error message describing the exception.</span>
+<span class="sd">    :ivar url: URL where the GUID was not found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Guid not found in URL&quot;</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initialize a GuidNotFoundException instance.</span>
+
+<span class="sd">        :param message: Custom error message. Defaults to &quot;Guid not found in URL&quot;.</span>
+<span class="sd">        :type message: str</span>
+<span class="sd">        :param url: URL where the GUID was not found. Defaults to None.</span>
+<span class="sd">        :type url: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message</span> <span class="o">=</span> <span class="n">message</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">url</span> <span class="o">=</span> <span class="n">url</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">message</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">url</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="Smart_meter"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter">[docs]</a><span class="k">class</span> <span class="nc">Smart_meter</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;All the main function to gather date from the smart metering site is gathered here&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span> <span class="o">=</span> <span class="n">Options</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span><span class="s2">&quot;--headless&quot;</span><span class="p">)</span>
+
+        <span class="n">agent</span> <span class="o">=</span> <span class="s2">&quot;Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/114.0&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">options</span><span class="o">.</span><span class="n">set_preference</span><span class="p">(</span><span class="s2">&quot;general.useragent.override&quot;</span><span class="p">,</span> <span class="n">agent</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">gecko_driver_path</span> <span class="o">:=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;GECKO_DRIVER_PATH&quot;</span><span class="p">):</span>
+            <span class="n">gecko_executable_path</span> <span class="o">=</span> <span class="n">gecko_driver_path</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">gecko_executable_path</span> <span class="o">=</span> <span class="n">GeckoDriverManager</span><span class="p">()</span><span class="o">.</span><span class="n">install</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">service</span> <span class="o">=</span> <span class="n">Service</span><span class="p">(</span><span class="n">executable_path</span><span class="o">=</span><span class="n">gecko_executable_path</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">firefox_driver</span> <span class="o">=</span> <span class="n">webdriver</span><span class="o">.</span><span class="n">Firefox</span><span class="p">(</span>
+            <span class="n">service</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">service</span><span class="p">,</span> <span class="n">options</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">options</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">s</span> <span class="o">=</span> <span class="n">Session</span><span class="p">(</span><span class="n">driver</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">firefox_driver</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">base_url</span> <span class="o">=</span> <span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">username</span> <span class="o">=</span> <span class="n">username</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">password</span> <span class="o">=</span> <span class="n">password</span>
+
+<div class="viewcode-block" id="Smart_meter.get_base_cookies"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.get_base_cookies">[docs]</a>    <span class="k">def</span> <span class="nf">get_base_cookies</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets cookies from the main site to be used for later&quot;&quot;&quot;</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">base_url</span><span class="p">)</span>
+        <span class="n">response_url</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">url</span>
+        <span class="n">split_url</span> <span class="o">=</span> <span class="n">response_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sap_id</span> <span class="o">=</span> <span class="n">split_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span></div>
+        <span class="c1"># print(r.url)</span>
+
+<div class="viewcode-block" id="Smart_meter.get_login_cookies"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.get_login_cookies">[docs]</a>    <span class="k">def</span> <span class="nf">get_login_cookies</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Log&#39;s into the main site, gets the cookies and the AuthCode for grabbing the token later on.&quot;&quot;&quot;</span>
+        <span class="n">url</span> <span class="o">=</span> <span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu/sap/opu/odata/sap/ZGW_UGYFELSZLG_CMS_NO_AUTH_SRV/Szovegek&quot;</span>
+        <span class="n">querystring</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;sap-client&quot;</span><span class="p">:</span> <span class="s2">&quot;112&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;sap-language&quot;</span><span class="p">:</span> <span class="s2">&quot;HU&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;$filter&quot;</span><span class="p">:</span> <span class="s2">&quot;Funkcio eq &#39;AKADALYMEN&#39;&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">querystring</span><span class="p">)</span>
+
+        <span class="n">login_url</span> <span class="o">=</span> <span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu/sap/opu/odata/sap/ZGW_UGYFELSZOLGALAT_LOGIN_SRV/Login&quot;</span>
+        <span class="n">querystring</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sap-client&quot;</span><span class="p">:</span> <span class="s2">&quot;112&quot;</span><span class="p">,</span> <span class="s2">&quot;sap-language&quot;</span><span class="p">:</span> <span class="s2">&quot;HU&quot;</span><span class="p">}</span>
+
+        <span class="n">payload</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Username&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">username</span><span class="p">,</span> <span class="s2">&quot;Password&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">}</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;Accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;X-Requested-With&quot;</span><span class="p">:</span> <span class="s2">&quot;X&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">cookies</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="s2">&quot;cookiePanelAccepted&quot;</span><span class="p">,</span> <span class="s2">&quot;1&quot;</span><span class="p">)</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">login_url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">querystring</span><span class="p">)</span>
+        <span class="n">r_dict</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="c1"># print(r.text)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">authcode</span> <span class="o">=</span> <span class="n">r_dict</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">][</span><span class="s2">&quot;AuthCode&quot;</span><span class="p">]</span></div>
+
+<div class="viewcode-block" id="Smart_meter.get_token"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.get_token">[docs]</a>    <span class="k">def</span> <span class="nf">get_token</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets Oauth 2.0 token to be used on the main site for authorization&quot;&quot;&quot;</span>
+        <span class="n">token_url</span> <span class="o">=</span> <span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu/sap/opu/odata/sap/ZGW_OAUTH_SRV/GetToken&quot;</span>
+        <span class="n">querystring</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;Code&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">authcode</span><span class="si">}</span><span class="s2">&#39;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;sap-client&quot;</span><span class="p">:</span> <span class="s2">&quot;112&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;sap-language&quot;</span><span class="p">:</span> <span class="s2">&quot;HU&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;Accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;X-Requested-With&quot;</span><span class="p">:</span> <span class="s2">&quot;X&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">token_url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">querystring</span><span class="p">)</span>
+        <span class="n">token_r_dict</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">token</span> <span class="o">=</span> <span class="n">token_r_dict</span><span class="p">[</span><span class="s2">&quot;d&quot;</span><span class="p">][</span><span class="s2">&quot;GetToken&quot;</span><span class="p">][</span><span class="s2">&quot;TokenCode&quot;</span><span class="p">]</span></div>
+
+        <span class="c1"># print(r.status_code)</span>
+
+<div class="viewcode-block" id="Smart_meter.get_custumer_data"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.get_custumer_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_custumer_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Gets custumer data as it&#39;s needs to be provided in the url&#39;s later on.&quot;&quot;&quot;</span>
+        <span class="n">custumer_number_url</span> <span class="o">=</span> <span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu/sap/opu/odata/sap/ZGW_UGYFELSZOLGALAT_SRV/Vevok&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">[</span><span class="s2">&quot;Authorization&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Bearer </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">token</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">querystring</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Funkcio&quot;</span><span class="p">:</span> <span class="s2">&quot;OKOSMERO&quot;</span><span class="p">,</span> <span class="s2">&quot;sap-client&quot;</span><span class="p">:</span> <span class="s2">&quot;112&quot;</span><span class="p">,</span> <span class="s2">&quot;sap-language&quot;</span><span class="p">:</span> <span class="s2">&quot;HU&quot;</span><span class="p">}</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">custumer_number_url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">querystring</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">custumer_number</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;d&quot;</span><span class="p">][</span><span class="s2">&quot;results&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;Id&quot;</span><span class="p">]</span>
+        <span class="c1"># print(r.status_code)</span>
+
+        <span class="n">custumer_id_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu/sap/opu/odata/sap/ZGW_UGYFELSZOLGALAT_SRV/Vevok(&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">custumer_number</span><span class="si">}</span><span class="s2">&#39;)/Felhelyek&quot;</span>
+        <span class="n">querystring</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;Funkcio&quot;</span><span class="p">:</span> <span class="s2">&quot;OKOSMERO&quot;</span><span class="p">,</span> <span class="s2">&quot;sap-client&quot;</span><span class="p">:</span> <span class="s2">&quot;112&quot;</span><span class="p">,</span> <span class="s2">&quot;sap-language&quot;</span><span class="p">:</span> <span class="s2">&quot;HU&quot;</span><span class="p">}</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">custumer_id_url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">querystring</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">customer_id</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;d&quot;</span><span class="p">][</span><span class="s2">&quot;results&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;Id&quot;</span><span class="p">]</span></div>
+        <span class="c1"># print(r.status_code)</span>
+
+<div class="viewcode-block" id="Smart_meter.get_smart_meter_data"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.get_smart_meter_data">[docs]</a>    <span class="k">def</span> <span class="nf">get_smart_meter_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;The smart metering site is on a external site, this function gets thoose links into a list.&quot;&quot;&quot;</span>
+        <span class="n">custumer_meters_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu/sap/opu/odata/sap/ZGW_UGYFELSZOLGALAT_SRV/Felhelyek(Vevo=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">custumer_number</span><span class="si">}</span><span class="s2">&#39;,Id=&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">customer_id</span><span class="si">}</span><span class="s2">&#39;)/Okosmero&quot;</span>
+        <span class="n">querystring</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;sap-client&quot;</span><span class="p">:</span> <span class="s2">&quot;112&quot;</span><span class="p">,</span> <span class="s2">&quot;sap-language&quot;</span><span class="p">:</span> <span class="s2">&quot;HU&quot;</span><span class="p">}</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">custumer_meters_url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">headers</span><span class="p">,</span> <span class="n">params</span><span class="o">=</span><span class="n">querystring</span><span class="p">)</span>
+        <span class="n">r_list</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;d&quot;</span><span class="p">][</span><span class="s2">&quot;results&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">meter_ids</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">json</span><span class="p">()[</span><span class="s2">&quot;d&quot;</span><span class="p">][</span><span class="s2">&quot;results&quot;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_links</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">r_list_lenght</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">r_list</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">link</span> <span class="ow">in</span> <span class="n">r_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">link</span><span class="p">[</span><span class="s2">&quot;URL&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="s2">&quot;guid=&amp;&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">:</span>
+                <span class="n">split_url</span> <span class="o">=</span> <span class="n">link</span><span class="p">[</span><span class="s2">&quot;URL&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;?&quot;</span><span class="p">)</span>
+
+                <span class="n">query_string</span> <span class="o">=</span> <span class="n">split_url</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+                <span class="n">query_string_list</span> <span class="o">=</span> <span class="n">query_string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;&amp;&quot;</span><span class="p">)</span>
+                <span class="n">query_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;url&quot;</span><span class="p">:</span> <span class="n">split_url</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="s2">&quot;meter_id&quot;</span><span class="p">:</span> <span class="n">link</span><span class="p">[</span><span class="s2">&quot;FogyMeroAzon&quot;</span><span class="p">]}</span>
+                <span class="k">for</span> <span class="n">item</span> <span class="ow">in</span> <span class="n">query_string_list</span><span class="p">:</span>
+                    <span class="n">key</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">item</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">)</span>
+                    <span class="n">query_dict</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="n">value</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_links</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">query_dict</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">r_list_lenght</span> <span class="o">-=</span> <span class="mi">1</span>
+
+        <span class="k">if</span> <span class="n">r_list_lenght</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">GuidNotFoundException</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">link</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Smart_meter.get_cookies_smart_meter_site"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.get_cookies_smart_meter_site">[docs]</a>    <span class="k">def</span> <span class="nf">get_cookies_smart_meter_site</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get cookies from the main site.Need to find a workaround as requestium uses old version of selenium.&quot;&quot;&quot;</span>
+        <span class="c1"># TODO get around without using selenium</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_links</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;url&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="c1"># print(f&quot;Smart meter link : {smart_meter_url}&quot;)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sap_client</span> <span class="o">=</span> <span class="s2">&quot;100&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_links</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;guid&quot;</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">transfer_session_cookies_to_driver</span><span class="p">(</span>
+            <span class="n">domain</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_url</span><span class="si">}</span><span class="s2">?guid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guid</span><span class="si">}</span><span class="s2">&amp;sap-client=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sap_client</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+        <span class="c1"># print(f&quot;{smart_meter_url}?guid={guid}&amp;sap-client={sap_client}&quot;)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_url</span><span class="si">}</span><span class="s2">?guid=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">guid</span><span class="si">}</span><span class="s2">&amp;sap-client=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sap_client</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="c1"># print(response.text)</span>
+
+        <span class="n">smart_meter_site_data_url</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">driver</span><span class="o">.</span><span class="n">current_url</span>
+        <span class="n">split_url</span> <span class="o">=</span> <span class="n">smart_meter_site_data_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;(&quot;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sap_id</span> <span class="o">=</span> <span class="n">split_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;)&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">transfer_driver_cookies_to_session</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">firefox_driver</span><span class="o">.</span><span class="n">quit</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="Smart_meter.smart_site_accept_cookes"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.smart_site_accept_cookes">[docs]</a>    <span class="k">def</span> <span class="nf">smart_site_accept_cookes</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Accapts the cookies on the smart metering site.&quot;&quot;&quot;</span>
+        <span class="n">first_page_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_url</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sap_id</span><span class="si">}</span><span class="s2">)/oldal_1.htm&quot;</span>
+
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;on&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;OnInputProcessing(tovabb)&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+
+        <span class="c1"># print(first_page_url)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">headers</span><span class="o">.</span><span class="n">update</span><span class="p">(</span>
+            <span class="p">{</span>
+                <span class="s2">&quot;Accept&quot;</span><span class="p">:</span> <span class="s2">&quot;text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Origin&quot;</span><span class="p">:</span> <span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Upgrade-Insecure-Requests&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Referer&quot;</span><span class="p">:</span> <span class="sa">f</span><span class="s2">&quot;https://eloszto.mvmemaszhalozat.hu/SMMU(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sap_id</span><span class="si">}</span><span class="s2">)/oldal_1.htm&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
+        <span class="p">)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">first_page_url</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="Smart_meter.get_ldc"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.get_ldc">[docs]</a>    <span class="k">def</span> <span class="nf">get_ldc</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Loads the load curve site, as data is stored in html.&quot;&quot;&quot;</span>
+        <span class="n">second_page_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_url</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sap_id</span><span class="si">}</span><span class="s2">)/Oldal_2.htm?OnInputProcessing(ToTerhGor1)&quot;</span>
+        <span class="c1"># print(second_page_url)</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">second_page_url</span><span class="p">)</span></div>
+        <span class="c1"># print(r.status_code)</span>
+        <span class="c1"># print(r.text)</span>
+
+<div class="viewcode-block" id="Smart_meter.set_date_for_ldc"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.set_date_for_ldc">[docs]</a>    <span class="k">def</span> <span class="nf">set_date_for_ldc</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">date_from</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">date_to</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function for posting dates, as load curve data is stored in the html.</span>
+
+<span class="sd">        :param date_from: date where to start</span>
+<span class="sd">        :type date_from: str</span>
+<span class="sd">        :param date_to: date where to end</span>
+<span class="sd">        :type date_to: str</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;azonosito&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_links</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s2">&quot;meter_id&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;tipus&quot;</span><span class="p">:</span> <span class="s2">&quot;Fogyasztás&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;idoszak_tol_mero&quot;</span><span class="p">:</span> <span class="n">date_from</span><span class="p">,</span>
+            <span class="s2">&quot;idoszak_ig_mero&quot;</span><span class="p">:</span> <span class="n">date_to</span><span class="p">,</span>
+            <span class="s2">&quot;mertekegyseg&quot;</span><span class="p">:</span> <span class="s2">&quot;kWh&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;profil&quot;</span><span class="p">:</span> <span class="s2">&quot;KIS_LAKOSSAG&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;OnInputProcessing(elkuld)&quot;</span><span class="p">:</span> <span class="s2">&quot;Adatok frissítése&quot;</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_url</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sap_id</span><span class="si">}</span><span class="s2">)/Oldal_3.htm&quot;</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">)</span></div>
+        <span class="c1"># print(r.status_code)</span>
+
+<div class="viewcode-block" id="Smart_meter.download_ldc_data"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.Smart_meter.download_ldc_data">[docs]</a>    <span class="k">def</span> <span class="nf">download_ldc_data</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;This function downloads the data inbetwen the previusly set dates.</span>
+
+<span class="sd">        :return: returns text object</span>
+<span class="sd">        :rtype: object</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">smart_meter_page3_url</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">smart_meter_url</span><span class="si">}</span><span class="s2">(</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">sap_id</span><span class="si">}</span><span class="s2">)/showPDF.htm?type=1&quot;</span>
+        <span class="p">)</span>
+        <span class="n">query_string</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;1&quot;</span><span class="p">}</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">s</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">smart_meter_page3_url</span><span class="p">)</span>
+        <span class="c1"># print(r.history)</span>
+        <span class="c1"># print(r.status_code)</span>
+        <span class="n">r</span><span class="o">.</span><span class="n">encoding</span> <span class="o">=</span> <span class="s2">&quot;ISO-8859-1&quot;</span>
+        <span class="k">return</span> <span class="n">r</span><span class="o">.</span><span class="n">text</span></div></div>
+
+
+<div class="viewcode-block" id="data_to_dataframe"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.data_to_dataframe">[docs]</a><span class="k">def</span> <span class="nf">data_to_dataframe</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts html/text request to dataframe</span>
+
+<span class="sd">    :param data: Text from request</span>
+<span class="sd">    :type data: object</span>
+<span class="sd">    :return: Returns a dataframe</span>
+<span class="sd">    :rtype: pandas.DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">columns</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;serial_number&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;id&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;date&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;time&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;imported&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;import_amount&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;import_state&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;import_state_desc&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;exported&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;exported_amount&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;export_state&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;export_state_desc&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;saldo&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;saldo_amount&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;saldo_state&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;saldo_state_desc&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">pandas</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+        <span class="n">io</span><span class="o">.</span><span class="n">StringIO</span><span class="p">(</span><span class="n">data</span><span class="p">),</span>
+        <span class="n">sep</span><span class="o">=</span><span class="s2">&quot;;&quot;</span><span class="p">,</span>
+        <span class="n">header</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">skiprows</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">names</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="clean_data"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.clean_data">[docs]</a><span class="k">def</span> <span class="nf">clean_data</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;This function can clean up text response</span>
+
+<span class="sd">    :param df: Dataframe to be cleaned</span>
+<span class="sd">    :type df: pandas.DataFrame</span>
+<span class="sd">    :return: Return a cleaned up dataframe</span>
+<span class="sd">    :rtype: pandas.DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">.</span><span class="n">lstrip</span><span class="p">(</span><span class="s1">&#39;=&quot;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;&quot;&#39;</span><span class="p">))</span>
+
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span> <span class="o">+</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;time&quot;</span><span class="p">]</span>
+    <span class="n">df</span><span class="p">[</span><span class="s2">&quot;datetime&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">pandas</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="s2">&quot;datetime&quot;</span><span class="p">])</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="s2">&quot;time&quot;</span><span class="p">])</span>
+    <span class="n">df_colums</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="n">items_to_keep</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;datetime&quot;</span><span class="p">,</span> <span class="s2">&quot;imported&quot;</span><span class="p">,</span> <span class="s2">&quot;saldo&quot;</span><span class="p">,</span> <span class="s2">&quot;exported&quot;</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="n">items_to_keep</span><span class="p">:</span>
+        <span class="n">df_colums</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">col</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="n">df_colums</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">col</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;imported&quot;</span><span class="p">,</span> <span class="s2">&quot;saldo&quot;</span><span class="p">,</span> <span class="s2">&quot;exported&quot;</span><span class="p">]:</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">col</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">df</span></div>
+
+
+<div class="viewcode-block" id="get_load_curve"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.get_load_curve">[docs]</a><span class="k">def</span> <span class="nf">get_load_curve</span><span class="p">(</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">date_from</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">date_to</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raw_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Get&#39;s load curve data from smart metering site into a Dataframe</span>
+
+<span class="sd">    :param username: Username for smart metering site</span>
+<span class="sd">    :type username: str</span>
+<span class="sd">    :param password: Password for smart metering site</span>
+<span class="sd">    :type password: str</span>
+<span class="sd">    :param date_from: Usualy date_from and date_to is the same date., defaults to None</span>
+<span class="sd">    :type date_from: _type_, optional</span>
+<span class="sd">    :param date_to: Usualy date_from and date_to is the same date., defaults to None</span>
+<span class="sd">    :type date_to: _type_, optional</span>
+<span class="sd">    :param raw_data: Flag for cleaning up response txt, defaults to False</span>
+<span class="sd">    :type raw_data: bool, optional</span>
+<span class="sd">    :return: Returns load curve data between set dates into a Dataframe</span>
+<span class="sd">    :rtype: pandas.DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">smart_meter</span> <span class="o">=</span> <span class="n">Smart_meter</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_base_cookies</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_login_cookies</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_token</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_custumer_data</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_smart_meter_data</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_cookies_smart_meter_site</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">smart_site_accept_cookes</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_ldc</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">date_from</span> <span class="ow">and</span> <span class="n">date_to</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">smart_meter</span><span class="o">.</span><span class="n">set_date_for_ldc</span><span class="p">(</span><span class="n">date_from</span><span class="o">=</span><span class="n">date_from</span><span class="p">,</span> <span class="n">date_to</span><span class="o">=</span><span class="n">date_to</span><span class="p">)</span>
+
+    <span class="n">load_curve_data</span> <span class="o">=</span> <span class="n">smart_meter</span><span class="o">.</span><span class="n">download_ldc_data</span><span class="p">()</span>
+    <span class="n">load_curve_df</span> <span class="o">=</span> <span class="n">data_to_dataframe</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">load_curve_data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">load_curve_df</span> <span class="k">if</span> <span class="n">raw_data</span> <span class="k">else</span> <span class="n">clean_data</span><span class="p">(</span><span class="n">load_curve_df</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_all_load_curve"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.get_all_load_curve">[docs]</a><span class="k">def</span> <span class="nf">get_all_load_curve</span><span class="p">(</span>
+    <span class="n">username</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">date_from</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">date_to</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">raw_data</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;It&#39;s similar to get_load_curve(), but this function was intented to get all the available data from the smart matering site day by day</span>
+
+<span class="sd">    :param username: Username for smart metering site</span>
+<span class="sd">    :type username: str</span>
+<span class="sd">    :param password: Password for smart metering site</span>
+<span class="sd">    :type password: str</span>
+<span class="sd">    :param date_from: Start to data where to start from, defaults to None</span>
+<span class="sd">    :type date_from: _type_, optional</span>
+<span class="sd">    :param date_to: End date where to stop, defaults to None</span>
+<span class="sd">    :type date_to: _type_, optional</span>
+<span class="sd">    :param raw_data: Flag for cleaning up response txt, defaults to False</span>
+<span class="sd">    :type raw_data: bool, optional</span>
+<span class="sd">    :return: Return all valid daily load curve in Dataframe</span>
+<span class="sd">    :rtype: pandas.DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">smart_meter</span> <span class="o">=</span> <span class="n">Smart_meter</span><span class="p">(</span><span class="n">username</span><span class="p">,</span> <span class="n">password</span><span class="p">)</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_base_cookies</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_login_cookies</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_token</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_custumer_data</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_smart_meter_data</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_cookies_smart_meter_site</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">smart_site_accept_cookes</span><span class="p">()</span>
+    <span class="n">smart_meter</span><span class="o">.</span><span class="n">get_ldc</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">date_from</span> <span class="ow">and</span> <span class="n">date_to</span> <span class="o">!=</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">dates</span> <span class="o">=</span> <span class="n">date_list</span><span class="p">(</span><span class="n">date_from</span><span class="p">,</span> <span class="n">date_to</span><span class="p">)</span>
+        <span class="c1"># print(dates)</span>
+        <span class="n">df_list</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">date</span> <span class="ow">in</span> <span class="n">dates</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">date</span><span class="p">)</span>
+            <span class="n">smart_meter</span><span class="o">.</span><span class="n">set_date_for_ldc</span><span class="p">(</span><span class="n">date_from</span><span class="o">=</span><span class="n">date</span><span class="p">,</span> <span class="n">date_to</span><span class="o">=</span><span class="n">date</span><span class="p">)</span>
+            <span class="n">load_curve_data</span> <span class="o">=</span> <span class="n">smart_meter</span><span class="o">.</span><span class="n">download_ldc_data</span><span class="p">()</span>
+            <span class="n">load_curve_df</span> <span class="o">=</span> <span class="n">data_to_dataframe</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">load_curve_data</span><span class="p">)</span>
+            <span class="n">load_curve_df</span> <span class="o">=</span> <span class="n">clean_data</span><span class="p">(</span><span class="n">load_curve_df</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">validate_df</span><span class="p">(</span><span class="n">df_to_validate</span><span class="o">=</span><span class="n">load_curve_df</span><span class="p">):</span>
+                <span class="n">df_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">load_curve_df</span><span class="p">)</span>
+
+        <span class="c1"># print(&quot;done&quot;)</span>
+        <span class="c1"># print(df_list)</span>
+        <span class="k">return</span> <span class="n">pandas</span><span class="o">.</span><span class="n">concat</span><span class="p">(</span><span class="n">df_list</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="validate_df"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.validate_df">[docs]</a><span class="k">def</span> <span class="nf">validate_df</span><span class="p">(</span><span class="n">df_to_validate</span><span class="p">:</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Usualy smart metering site stores daily data for 3 months, after that all the daily data is deleted.Helper function for get_all_load_curve() to validate the date is valid on that date.</span>
+
+<span class="sd">    :param df_to_validate: Dataframe which validation is performed</span>
+<span class="sd">    :type df_to_validate: pandas.DataFrame</span>
+<span class="sd">    :return: Returns True when the Dataframe is valid</span>
+<span class="sd">    :rtype: bool</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="p">(</span>
+        <span class="nb">sum</span><span class="p">(</span>
+            <span class="p">[</span>
+                <span class="n">df_to_validate</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="mi">48</span><span class="p">]]</span><span class="o">.</span><span class="n">imported</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                <span class="o">+</span> <span class="n">df_to_validate</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="mi">48</span><span class="p">]]</span><span class="o">.</span><span class="n">exported</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+                <span class="o">+</span> <span class="n">df_to_validate</span><span class="o">.</span><span class="n">iloc</span><span class="p">[[</span><span class="mi">48</span><span class="p">]]</span><span class="o">.</span><span class="n">saldo</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="p">]</span>
+        <span class="p">)</span>
+        <span class="o">&gt;</span> <span class="mf">0.0</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="sum_load_curve"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.sum_load_curve">[docs]</a><span class="k">def</span> <span class="nf">sum_load_curve</span><span class="p">(</span><span class="n">load_curve_df</span><span class="p">:</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pandas</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Summation function for load curve data set</span>
+
+<span class="sd">    :param load_curve_df: Dataframe which summoned</span>
+<span class="sd">    :type load_curve_df: pandas.DataFrame</span>
+<span class="sd">    :return: Returns summed dataset</span>
+<span class="sd">    :rtype: pandas.DataFrame</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">load_curve_df</span><span class="p">[[</span><span class="s2">&quot;imported&quot;</span><span class="p">,</span> <span class="s2">&quot;exported&quot;</span><span class="p">,</span> <span class="s2">&quot;saldo&quot;</span><span class="p">]]</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="date_list"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.date_list">[docs]</a><span class="k">def</span> <span class="nf">date_list</span><span class="p">(</span><span class="n">date_from</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">date_to</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">list</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Makes a list with date&#39;s between date_from and date_to</span>
+
+<span class="sd">    :param date_from: date_from in string</span>
+<span class="sd">    :type date_from: str</span>
+<span class="sd">    :param date_to: date_to in string</span>
+<span class="sd">    :type date_to: str</span>
+<span class="sd">    :return: Returns a list with all the dates</span>
+<span class="sd">    :rtype: list</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">datetime_from</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date_from</span><span class="p">,</span> <span class="s2">&quot;%Y.%m.</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+    <span class="n">datetime_to</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">strptime</span><span class="p">(</span><span class="n">date_to</span><span class="p">,</span> <span class="s2">&quot;%Y.%m.</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">date</span><span class="p">()</span>
+    <span class="n">date_delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">datetime_to</span> <span class="o">-</span> <span class="n">datetime_from</span><span class="p">)</span><span class="o">.</span><span class="n">days</span>
+
+    <span class="k">return</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">datetime_from</span> <span class="o">+</span> <span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">n</span><span class="p">))</span><span class="o">.</span><span class="n">strftime</span><span class="p">(</span><span class="s2">&quot;%Y.%m.</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">n</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">date_delta</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="main"><a class="viewcode-back" href="../../mvm_smart_meter.html#mvm_smart_meter.smart_meter.main">[docs]</a><span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Main funtion intented for debuging&quot;&quot;&quot;</span>
+    <span class="kn">import</span> <span class="nn">dotenv</span>
+
+    <span class="n">env_path</span> <span class="o">=</span> <span class="s2">&quot;./env/&quot;</span>
+    <span class="n">env_file</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">env_path</span><span class="si">}</span><span class="s2">config.env&quot;</span>
+    <span class="n">dotenv</span><span class="o">.</span><span class="n">find_dotenv</span><span class="p">(</span><span class="n">env_file</span><span class="p">,</span> <span class="n">raise_error_if_not_found</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">dotenv</span><span class="o">.</span><span class="n">load_dotenv</span><span class="p">(</span><span class="n">env_file</span><span class="p">)</span>
+
+    <span class="n">username</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;USERNAME&quot;</span><span class="p">)</span>
+    <span class="n">password</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s2">&quot;PASSWORD&quot;</span><span class="p">)</span>
+
+    <span class="n">df</span> <span class="o">=</span> <span class="n">get_all_load_curve</span><span class="p">(</span>
+        <span class="n">username</span><span class="o">=</span><span class="n">username</span><span class="p">,</span>
+        <span class="n">password</span><span class="o">=</span><span class="n">password</span><span class="p">,</span>
+        <span class="n">date_from</span><span class="o">=</span><span class="s2">&quot;2022.10.01&quot;</span><span class="p">,</span>
+        <span class="n">date_to</span><span class="o">=</span><span class="s2">&quot;2023.02.08&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="n">df</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="s2">&quot;./df.pkl&quot;</span><span class="p">)</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, ktomi96.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
